@@ -8,6 +8,7 @@ vimdiff result.target.test.data target.test.data
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <assert.h>
 
 #define EXIT_MSG(s) 								 \
 do {                                                 \
@@ -17,6 +18,7 @@ do {                                                 \
 } while (0)
 
 float * readMatrix(char * filename, int nRows, int nCols);
+float* transpose(float M[], int m, int n);
 void print_result(float* result, int mR, int nR, int real_mR, int real_nR, int isRowMajor);
 
 int main(int argc, char* argv[])
@@ -38,6 +40,9 @@ int main(int argc, char* argv[])
 	int c_pFilter_in = c_in; // Number of input feature maps - originally 96
 	int h_pFilter_in = 5; // Height of each pFilter - originally 7
 	int w_pFilter_in = 5; // Width of each pFilter - originally 7
+	int padding = w_pFilter_in/2;
+	assert(w_pFilter_in == h_pFilter_in);
+	assert(w_pFilter_in % 2 == 1);
 
 	int n_out;// = 1; // Number of output images.
 	int c_out;// = 64; // Number of output feature maps per image.
@@ -53,8 +58,10 @@ int main(int argc, char* argv[])
 	int nDataTypeSize = (((int)dataType)+1) * sizeof(float); // = 4
 	float *pImageInBatch_h = readMatrix(filename_img, c_in*h_in*w_in, n_in);
 	float *pImageInBatch_d = NULL;
-	float *pFilter_h = readMatrix(filename_filter, c_pFilter_in*h_pFilter_in*w_pFilter_in, k_pFilter_in);
+	float *pFilter_h_tmp = readMatrix(filename_filter, c_pFilter_in*h_pFilter_in*w_pFilter_in, k_pFilter_in);
+	float *pFilter_h = transpose(pFilter_h_tmp, c_pFilter_in*h_pFilter_in*w_pFilter_in, k_pFilter_in);
 	float *pFilter_d = NULL;
+	free(pFilter_h_tmp);
 
 	// Create CudNN
 	status = cudnnCreate(&hCudNN);
@@ -80,20 +87,18 @@ int main(int argc, char* argv[])
 	err = cudaMemcpy(pFilter_d, pFilter_h, (size_t)(k_pFilter_in*c_pFilter_in*h_pFilter_in*w_pFilter_in * nDataTypeSize), cudaMemcpyHostToDevice);
 	if (err != cudaSuccess) EXIT_MSG("ERROR ~");
 
-	// Fill the input image and pFilter data
-	//TODO: Still figuring this out
 	// Set decriptors
 	status = cudnnSetTensor4dDescriptor(pInputDesc, CUDNN_TENSOR_NCHW, dataType, n_in, c_in, h_in, w_in);
 	if (status != CUDNN_STATUS_SUCCESS) EXIT_MSG("ERROR..");
 	status = cudnnSetFilter4dDescriptor(pFilterDesc, dataType, k_pFilter_in, c_pFilter_in, h_pFilter_in, w_pFilter_in);
 	if (status != CUDNN_STATUS_SUCCESS) EXIT_MSG("ERROR..");
-	status = cudnnSetConvolution2dDescriptor(pConvDesc, 2, 2, 1, 1, 1, 1, CUDNN_CONVOLUTION);
+	status = cudnnSetConvolution2dDescriptor(pConvDesc, padding, padding, 1, 1, 1, 1, CUDNN_CONVOLUTION);
 	if (status != CUDNN_STATUS_SUCCESS) EXIT_MSG("ERROR..");
 
 	/* Helper function to return the dimensions of the output tensor given a convolution descriptor */
-	status = CUDNNWINAPI cudnnGetConvolution2dForwardOutputDim( pConvDesc, pInputDesc, pFilterDesc, &n_out, &c_out, &h_out, &w_out);
+	status = cudnnGetConvolution2dForwardOutputDim( pConvDesc, pInputDesc, pFilterDesc, &n_out, &c_out, &h_out, &w_out);
 	if (status != CUDNN_STATUS_SUCCESS) EXIT_MSG("ERROR..");
-	//printf("n_out:%d, c_out:%d, h_out:%d, w_out:%d\n", n_out, c_out, h_out, w_out);
+	printf("n_out:%d, c_out:%d, h_out:%d, w_out:%d\n", n_out, c_out, h_out, w_out);
 
 	float* pImageOutBatch_h = readMatrix(filename_targetInit, c_out*h_out*w_out, n_out);
 	float* pImageOutBatch_d = NULL;
@@ -212,4 +217,17 @@ void print_result(float* result, int mR, int nR, int real_mR, int real_nR, int i
         printf("\n");
     }
     //printf("============END==========\n");
+}
+
+
+float* transpose(float M[], int m, int n)
+{  
+	float *res = (float *)malloc(m*n*sizeof(res[0]));
+
+	for (int y = 0; y < m; ++y){
+		for (int x = 0; x < n; ++x){
+			res[m*x + y] = M[n*y + x];
+		}
+	}
+	return res;
 }
