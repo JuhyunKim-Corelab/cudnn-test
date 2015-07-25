@@ -49,17 +49,17 @@ int main(int argc, char* argv[])
 	int h_out;// = 12; // Height of each output feature map.
 	int w_out;// = 12; // Width of each output feature map.
 
-	char filename_img[1024] = "image.test.data";//"image.one.data";
-	char filename_filter[1024] = "filter.test.data";//"filter.zero.data";
-	char filename_targetInit[1024] = "targetInit.test.data";
-	char filename_target[1024] = "target.test.data";
+	char filename_img[1024] = "image.one.data";//"image.one.data";
+	char filename_filter[1024] = "filter.zero.data";//"filter.zero.data";
+	char filename_targetInit[1024] = "targetInit.zero.data";
+	//char filename_target[1024] = "target.test.data";
 
 	cudnnDataType_t dataType = CUDNN_DATA_FLOAT;
 	int nDataTypeSize = (((int)dataType)+1) * sizeof(float); // = 4
 	float *pImageInBatch_h = readMatrix(filename_img, c_in*h_in*w_in, n_in);
 	float *pImageInBatch_d = NULL;
 	float *pFilter_h_tmp = readMatrix(filename_filter, c_pFilter_in*h_pFilter_in*w_pFilter_in, k_pFilter_in);
-	float *pFilter_h = transpose(pFilter_h_tmp, c_pFilter_in*h_pFilter_in*w_pFilter_in, k_pFilter_in);
+	float *pFilter_h = transpose(pFilter_h_tmp, c_pFilter_in * h_pFilter_in * w_pFilter_in, k_pFilter_in);
 	float *pFilter_d = NULL;
 	free(pFilter_h_tmp);
 
@@ -141,6 +141,7 @@ int main(int argc, char* argv[])
 	err = cudaMemcpy(pImageOutBatch_h, pImageOutBatch_d, (size_t)(n_out*c_out*h_out*w_out * nDataTypeSize), cudaMemcpyDeviceToHost);
 	if (err != cudaSuccess) EXIT_MSG("ERROR ~");
 
+	
 	print_result(pImageOutBatch_h, c_out*h_out*w_out, n_out, c_out*h_out*w_out, n_out, 1);
 
 	// Clean-up
