@@ -102,6 +102,7 @@ status = cudnnSetFilterDescriptor(pFilterDesc, dataType, k_pFilter_in, c_pFilter
 if (status != CUDNN_STATUS_SUCCESS)
 throw status;
 
+//CUDNN_CROSS_CORRELATION
 status = cudnnSetConvolutionDescriptor(pConvDesc, pInputDesc, pFilterDesc, 0, 0, 2, 2, 1, 1, CUDNN_CONVOLUTION);
 if (status != CUDNN_STATUS_SUCCESS)
 throw status;
