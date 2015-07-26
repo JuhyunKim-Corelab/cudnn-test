@@ -49,8 +49,8 @@ int main(int argc, char* argv[])
 	int h_out;// = 12; // Height of each output feature map.
 	int w_out;// = 12; // Width of each output feature map.
 
-	char filename_img[1024] = "image.one.data";//"image.one.data";
-	char filename_filter[1024] = "filter.zero.data";//"filter.zero.data";
+	char filename_img[1024] = "image.test.data";//"image.one.data";
+	char filename_filter[1024] = "filter.test.data";//"filter.zero.data";
 	char filename_targetInit[1024] = "targetInit.zero.data";
 	//char filename_target[1024] = "target.test.data";
 
@@ -88,17 +88,18 @@ int main(int argc, char* argv[])
 	if (err != cudaSuccess) EXIT_MSG("ERROR ~");
 
 	// Set decriptors
+	//CUDNN_CROSS_CORRELATION
 	status = cudnnSetTensor4dDescriptor(pInputDesc, CUDNN_TENSOR_NCHW, dataType, n_in, c_in, h_in, w_in);
 	if (status != CUDNN_STATUS_SUCCESS) EXIT_MSG("ERROR..");
 	status = cudnnSetFilter4dDescriptor(pFilterDesc, dataType, k_pFilter_in, c_pFilter_in, h_pFilter_in, w_pFilter_in);
 	if (status != CUDNN_STATUS_SUCCESS) EXIT_MSG("ERROR..");
-	status = cudnnSetConvolution2dDescriptor(pConvDesc, padding, padding, 1, 1, 1, 1, CUDNN_CONVOLUTION);
+	status = cudnnSetConvolution2dDescriptor(pConvDesc, padding, padding, 1, 1, 1, 1, CUDNN_CROSS_CORRELATION);//CUDNN_CONVOLUTION //CUDNN_CROSS_CORRELATION
 	if (status != CUDNN_STATUS_SUCCESS) EXIT_MSG("ERROR..");
 
 	/* Helper function to return the dimensions of the output tensor given a convolution descriptor */
 	status = cudnnGetConvolution2dForwardOutputDim( pConvDesc, pInputDesc, pFilterDesc, &n_out, &c_out, &h_out, &w_out);
 	if (status != CUDNN_STATUS_SUCCESS) EXIT_MSG("ERROR..");
-	printf("n_out:%d, c_out:%d, h_out:%d, w_out:%d\n", n_out, c_out, h_out, w_out);
+	//printf("n_out:%d, c_out:%d, h_out:%d, w_out:%d\n", n_out, c_out, h_out, w_out);
 
 	float* pImageOutBatch_h = readMatrix(filename_targetInit, c_out*h_out*w_out, n_out);
 	float* pImageOutBatch_d = NULL;
