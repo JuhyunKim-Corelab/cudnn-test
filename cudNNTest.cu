@@ -10,6 +10,7 @@ vimdiff result.target.test.data target.test.data
 #include <errno.h>
 #include <assert.h>
 
+#define REPEAT 1000
 #define EXIT_MSG(s) 								 \
 do {                                                 \
     printf ("%s\n", s);                              \
@@ -20,6 +21,7 @@ do {                                                 \
 float * readMatrix(char * filename, int nRows, int nCols);
 float* transpose(float M[], int m, int n);
 void print_result(float* result, int mR, int nR, int real_mR, int real_nR, int isRowMajor);
+template <int T_numImages> __global__ void initTarget(float* targets, const int numImages);
 
 int main(int argc, char* argv[])
 {
@@ -133,11 +135,18 @@ int main(int argc, char* argv[])
 	float float_one_h = 1.0;
 
 	/* Function to perform the forward multiconvolution */
-	status = cudnnConvolutionForward(hCudNN, &float_one_h,
+	for (int i = 0; i < REPEAT; ++i)
+	{
+		dim3 initBlocks(288, 1, 1);
+        dim3 initThreads(32, 1, 1);
+        initTarget<1/*numImages*/><<<initBlocks, initThreads>>>(pImageOutBatch_d, 1);
+		status = cudnnConvolutionForward(hCudNN, &float_one_h,
 							  pInputDesc, pImageInBatch_d, pFilterDesc, pFilter_d, pConvDesc,
 							  algo, workSpace_d, workSpaceSizeInBytes, &float_one_h,
                               pOutputDesc, pImageOutBatch_d);
-	if (status != CUDNN_STATUS_SUCCESS) EXIT_MSG("ERROR..");
+		if (status != CUDNN_STATUS_SUCCESS) EXIT_MSG("ERROR..");
+	}
+	
 
 	err = cudaMemcpy(pImageOutBatch_h, pImageOutBatch_d, (size_t)(n_out*c_out*h_out*w_out * nDataTypeSize), cudaMemcpyDeviceToHost);
 	if (err != cudaSuccess) EXIT_MSG("ERROR ~");
@@ -232,4 +241,15 @@ float* transpose(float M[], int m, int n)
 		}
 	}
 	return res;
+}
+
+
+template <int T_numImages> //(float* targets, const int numImages, const int targetSizeX, const int targetSizeY, const int numImgColors)
+__global__ void initTarget(float* targets, const int numImages)
+{
+	unsigned int colIdx = blockDim.x * blockIdx.x + threadIdx.x;
+	for (int i = 0; i < numImages; ++i){
+        targets[(colIdx)*numImages + i] = 0.0;//((float)((long)loadSeqs));//(float)(*loadSeqs_thisNeuron);
+        //targets[(neuronIdx_old)*numImages + i] = prod[i]; //target[()*numImages + "n-th image"]
+    }
 }

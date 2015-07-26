@@ -20,6 +20,7 @@ nvcc convOpti.cu -o convOpti.exe
 #define GRID_DIM_X 64 // it's just for compiler option
 #endif
 #define BLOCK_SIZE 32
+#define REPEAT 1000
 
 #define EXIT_MSG(s) 								 \
 do {                                                 \
@@ -134,10 +135,14 @@ int main()
     dim3 threads(144, 1, 1);
     
     //cudaFuncCachePreferNone//cudaFuncCachePreferShared//cudaFuncCachePreferL1
-	cudaFuncSetCacheConfig(optiConvFilter <1>, cudaFuncCachePreferShared);
-	optiConvFilter <1><<<blocks, threads>>>(images_d, filters_d, targets_d,
-	    numImages, numFilters, imgSizeY, imgSizeX, filterSize, paddingStart, moduleStride, numModulesY,
-	    numModulesX, imgStride, numImgColors, scaleTargets, scaleOutput, conv);
+    for (int i = 0; i < REPEAT; ++i)
+    {
+        cudaFuncSetCacheConfig(optiConvFilter <1>, cudaFuncCachePreferShared);
+        optiConvFilter <1><<<blocks, threads>>>(images_d, filters_d, targets_d,
+            numImages, numFilters, imgSizeY, imgSizeX, filterSize, paddingStart, moduleStride, numModulesY,
+            numModulesX, imgStride, numImgColors, scaleTargets, scaleOutput, conv);
+    }
+	
 
     err = cudaMemcpy(targets_h, targets_d, (size_t)(9216*1*sizeof(float)), cudaMemcpyDeviceToHost);
     if (err != cudaSuccess) EXIT_MSG("ERROR ~");
