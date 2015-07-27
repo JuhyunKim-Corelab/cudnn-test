@@ -14,3 +14,9 @@ cat -n result.target.test.data > result.target.test.n.data
 
 vimdiff convOpti.target.test.n.data result.target.test.n.data
 
+
+#
+#time ./convOpti.exe > convOpti.target.test.data
+#time ./cudNNTest.exe > result.target.test.data
+#diff convOpti.target.test.data result.target.test.data
+#
