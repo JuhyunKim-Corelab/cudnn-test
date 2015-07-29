@@ -2,6 +2,10 @@
 
 /*
 nvcc convOpti.cu -o convOpti.exe
+nvcc -ccbin /home/seungbin/Desktop/llvm/llvm-install/bin/clang++ -Xcompiler ,\"-emit-llvm\",\"-std=c++11\", convOpti.cu -c -o convOpti.bc -D__STRICT_ANSI__
+nvcc -ccbin /home/seungbin/Desktop/llvm/llvm-install/bin/clang++ -Xcompiler ,\"-emit-llvm\",\"-D__cplusplus=201103L\", convOpti.cu -c -o convOpti.bc -D__STRICT_ANSI__
+-I./include -I./include/common -I./include/cudaconv2 -I./include/nvmatrix -I/home/seungbin/npu/tools/cudnn-6.5-linux-x64-v2 -I./include/reorder -I. -I/usr/local/cuda/include -I/home/seungbin/NVIDIA_GPU_Computing_SDK/C/common/inc -I/home/seungbin/NVIDIA_GPU_Computing_SDK/shared//inc
+clang++ -c -emit-llvm -I/usr/bin/local/cuda/include convOpti.cu -o convOpti.bc
 */
 
 //#include <convOpti.cuh>
@@ -12,6 +16,16 @@ nvcc convOpti.cu -o convOpti.exe
 #include <stdlib.h>
 #include <errno.h>
 #include <assert.h>
+#include <math.h>
+
+#include "cuda.h"
+#include <device_launch_parameters.h>
+#include <cuda_runtime_api.h>
+#include <vector_types.h>
+#include <host_defines.h>
+
+//#include <map>
+//#include <algorithm>
 
 #ifndef N_LIVING_NEURON
 #define N_LIVING_NEURON 2027 // it's just for compiler option
